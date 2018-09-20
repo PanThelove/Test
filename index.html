@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>metor shower</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            overflow: hidden;
+        }
+        
+        .wrapper {
+            margin: 0 auto;
+            width: 1980px;
+        }
+        
+        .word {
+            width: 200px;
+            height: 200px;
+            position: absolute;
+            transform: translate(20px, -800px);
+            text-align: center;
+            font-family: panel-heading;
+            color: white;
+            animation-name: shinning;
+            animation-iteration-count: infinite;
+            animation-duration: 3s;
+        }
+        
+        @keyframes shinning {
+            0% {
+                opacity: 1;
+            }
+            70% {
+                opacity: 0.3;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrapper">
+        <canvas width="600" height="600" style="background:#000000;" id="canvas"></canvas>
+        <div class="word">
+            <p>很抱歉晚了这么久呢<br>不过呀<br>宝宝能够喜欢就没问题啦</p>
+        </div>
+    </div>
+
+</body>
+<script>
+    var canvas = document.getElementById("canvas");
+    var ctx = canvas.getContext("2d");
+    var s = window.screen;
+    var w = s.width;
+    var h = s.height;
+    canvas.width = w;
+    canvas.height = h;
+    var StarCount = 800;
+    var rainCount = 20;
+    var arr = new Array();
+    var rains = new Array();
+
+    var Star = function() {
+        this.x = w * Math.random();
+        this.y = h * Math.random();
+        this.text = "."; //文本
+        this.color = "white"; //颜色
+
+        //产生随机颜色
+
+        this.getColor = function() {
+            var r = Math.random();
+            if (r < 0.5) {
+                this.color = "#333";
+            } else {
+                this.color = "white";
+            }
+        }
+
+        this.init = function() {
+            this.getColor();
+        }
+
+        this.draw = function() {
+            ctx.fillStyle = this.color;
+            ctx.fillText(this.text, this.x, this.y);
+        }
+    };
+
+    var Rain = function() {
+        this.x = -1;
+        this.y = -1;
+        this.length = -1; //长度
+        this.angle = 30; //倾斜角度
+        this.width = -1; //宽度
+        this.height = -1; //高度
+        this.speed = 1; //速度
+        this.offset_x = -1; //横轴移动偏移量
+        this.offset_y = -1; //纵轴移动偏移量
+        this.alpha = 1; //透明度
+        this.color1 = ""; //流星的色彩
+        this.color2 = ""; //流星的色彩
+
+        this.init = function() {
+            this.getPos();
+            this.alpha = 1;
+            this.getRandomColor();
+            var x = Math.random() * 80 + 60;
+            this.length = Math.ceil(x);
+            this.angle = 30;
+            x = Math.random() + 0.5;
+            this.speed = Math.ceil(x);
+            var cos = Math.cos(this.angle * 3.14 / 180);
+            var sin = Math.sin(this.angle * 3.14 / 180);
+            this.width = this.length * cos;
+            this.height = this.length * sin;
+            this.offset_x = this.speed * cos;
+            this.offset_y = this.speed * sin;
+        }
+        this.countPos = function() {
+            this.x -= this.offset_x;
+            this.y += this.offset_y;
+        }
+
+        this.getPos = function() {
+            this.x = Math.random() * w;
+            this.y = Math.random() * h;
+        }
+
+
+        this.getRandomColor = function() {
+            var a = Math.ceil(255 - 240 * Math.random());
+            this.color1 = "rgba(" + a + "," + a + "," + a + ",1)";
+            this.color2 = "black";
+        }
+
+        this.draw = function() {
+            ctx.save();
+            ctx.beginPath();
+            ctx.lineWidth = 1; //宽度
+            ctx.globalAlpha = this.alpha; //设置透明度
+            //创建横向渐变颜色,起点坐标至终点坐标
+            var line = ctx.createLinearGradient(this.x, this.y,
+                this.x + this.width,
+                this.y - this.height);
+
+
+
+            //分段设置颜色
+            line.addColorStop(0, "white");
+            line.addColorStop(0.3, this.color1);
+            line.addColorStop(0.6, this.color2);
+            ctx.strokeStyle = line;
+
+            ctx.moveTo(this.x, this.y);
+
+            ctx.lineTo(this.x + this.width, this.y - this.height);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.restore();
+
+        }
+
+        this.move = function() {
+            var x = this.x + this.width - this.offset_x;
+            var y = this.y - this.height;
+            ctx.clearRect(x - 3, y - 3, this.offset_x + 5, this.offset_y + 5);
+            this.countPos();
+            this.alpha -= 0.002;
+            this.draw();
+        }
+
+    }
+
+    function playRains() {
+        for (var n = 0; n < rainCount; n++) {
+            var rain = rains[n];
+            rain.move(); //移动
+            if (rain.y > window.innerHeight) { //超出界限后重来
+                ctx.clearRect(rain.x, rain.y - rain.height, rain.width, rain.height);
+                rains[n] = new Rain();
+                rains[n].init();
+            }
+        }
+
+        setTimeout("playRains()", 10);
+
+    }
+
+    function playStars() {
+        for (var n = 0; n < StarCount; n++) {
+            arr[n].getColor();
+            arr[n].draw();
+        }
+
+        setTimeout("playStars()", 100);
+    }
+
+    window.onload = function() {
+
+
+        for (var i = 0; i < StarCount; i++) {
+            var star = new Star();
+            star.init();
+            star.draw();
+            arr.push(star);
+        }
+        playStars();
+
+
+        for (var i = 0; i < rainCount; i++) {
+            var rain = new Rain();
+            rain.init();
+            rain.draw();
+            rains.push(rain);
+        }
+        playRains();
+
+    }
+</script>
+
+</html>
